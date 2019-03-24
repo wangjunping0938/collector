@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #
 # Accessing Website with Browsers
-
 import re
 import os
 from selenium import webdriver
@@ -66,6 +65,8 @@ if __name__ == '__main__':
 
     # Test firefox
     from pyvirtualdisplay import Display
+    import logging
+    logging.getLogger('easyprocess').setLevel(logging.INFO)
     display = Display(visible=0,size=(1920,1080))
     display.start()
     firefox = Browser.firefox(ua)
