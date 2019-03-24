@@ -1,1 +1,5 @@
 Scrapy == 1.6.0
+
+selenium == 3.8.0
+
+PyVirtualDisplay == 0.2.1
