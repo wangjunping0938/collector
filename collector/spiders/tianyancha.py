@@ -2,20 +2,26 @@
 #
 # https://www.tianyancha.com spider
 import os
+import sys
 import time
 import random
 import logging
 import traceback
 import scrapy
+import requests
+from urllib.request import urlretrieve 
 from PIL import Image
 from pyvirtualdisplay import Display
-from collector.middlewares.browser import Browser
-from collector.middlewares.parsefile import ParseFile as PF
 from scrapy.utils.project import get_project_settings
+from scrapy.http import Request
+from scrapy.selector import Selector
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains
+from collector.middlewares.browser import Browser
+from collector.middlewares.parsefile import ParseFile as PF
+from collector.items.tianyancha import TianyanchaItem
 
 
 class Headers(object):
@@ -29,13 +35,16 @@ class TianyanchaSpider(scrapy.Spider):
     name = 'tianyancha'
     allowed_domains = ['tianyancha.com']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, company_name, id, number, *args, **kwargs):
         settings = get_project_settings()
         super(TianyanchaSpider, self).__init__(*args, **kwargs)
         self.headers = Headers().headers
         self.user_agent = settings['USER_AGENT']
         self.temp = settings['TEMP_DIR']
         self.users = PF.parse2dict(settings['CONFIG_FILE'], self.name)
+        self.company_name = company_name
+        self.id = id
+        self.number = number
         try:
             os.makedirs(self.temp)
         except OSError: pass
@@ -45,12 +54,81 @@ class TianyanchaSpider(scrapy.Spider):
         login_url = 'https://www.tianyancha.com/login'
         username = random.choice(list(self.users.keys()))
         password = self.users[username]
-        S.login(self.user_agent, self.name, login_url, username, password,
-                self.temp)
-        pass
 
-    def parse(self, response):
-        pass
+        # 登陆获取cookie
+        cookie_file = '{}/{}@{}.cookie'.format(self.temp, username, self.name)
+        retry = 0
+        while not os.path.exists(cookie_file):
+            try:
+                S.login(self.user_agent, self.name, login_url, username,
+                        password, self.temp)
+            except Exception as e:
+                pass
+            retry += 1
+            if retry >=5: break
+
+        # 构造URL爬取
+        search_url = 'https://www.tianyancha.com/search?key={}'.format(self.company_name)
+        if os.path.exists(cookie_file):
+            cookies = Browser.read_cookies(cookie_file)[1:]
+            self.headers['User-Agent'] = Browser.read_cookies(cookie_file)[0]
+            meta = {'cookiejar':True, 'dont_filter':True,
+                    'handle_httpstatus_list':[301, 302]}
+            yield Request(search_url, cookies=cookies, headers=self.headers,
+                          callback=self.parse_search, meta=meta)
+
+    def parse_search(self, response):
+        # 解析搜索页
+        data = response.body.decode('utf-8', 'ignore')
+        rules = eval('Rules().{}'.format(sys._getframe().f_code.co_name))
+
+        ext = lambda data, rule: Selector(text=data).xpath(rule).extract()
+        for d in ext(data, rules['block']):
+            keys = list(rules['rules'].keys())
+            values = [''.join(ext(d, rules['rules'][k])) for k in keys]
+            rst = dict(zip(keys, values))
+            if rst['name'] == self.company_name:
+                response.meta.update({'data':rst})
+                yield Request(rst['url'], meta=response.meta,
+                              headers=self.headers, callback=self.parse_details)
+            break
+
+    def parse_details(self, response):
+        # 解析详情页
+        data = response.body.decode('utf-8', 'ignore')
+        rules = eval('Rules().{}'.format(sys._getframe().f_code.co_name))
+        ext_fst = lambda d, r: Selector(text=d).xpath(r).extract_first()
+        ext = lambda d, r: Selector(text=d).xpath(r).extract()
+
+        item = TianyanchaItem()
+        # 更新搜索页信息至爬取结果
+        item.update(response.meta['data'])
+
+        # 爬取结果中的默认字段
+        item['craw_user_id'] = 5
+        item['number'] = self.number
+        item['_id'] = self.id
+
+        # 详情页数据提取
+        for pk in rules.keys():
+            block = ext_fst(data, rules[pk]['block'])
+            if block:
+                keys = list(rules[pk]['rules'].keys())
+                values = [ext(block, rules[pk]['rules'][k]) for k in keys]
+                item.update(dict(zip(keys, values)))
+        yield item
+
+        # 下载字体文件(如果出现字体替换的情况下)
+        #self.download_font_file(data)
+
+    def download_font_file(data):
+        # 下载字体文件
+        rules = Rules.css_font
+        css_url = Selector(text=data).xpath(rules['css']).extract_first()
+        response = requests.get(css_url).text
+        font_url = Selector(text=response).re_first(rules['font'])
+        filename = '{}/{}'.format(self.temp, font_url.split(r'/')[-1])
+        urlretrieve(font_url, filename)
 
 
 class SimulatedLogin(object):
