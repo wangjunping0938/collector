@@ -3,6 +3,7 @@
 # Accessing Website with Browsers
 import re
 import os
+import json
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
@@ -21,8 +22,8 @@ class Browser(object):
         phantomjs = webdriver.PhantomJS(executable_path=exec_path,
                                         service_log_path='/dev/null',
                                         desired_capabilities=dcap)
-        phantomjs.set_page_load_timeout(30)
-        phantomjs.implicitly_wait(30)
+        phantomjs.set_page_load_timeout(60)
+        phantomjs.implicitly_wait(60)
         phantomjs.maximize_window()
         return phantomjs
 
@@ -33,8 +34,8 @@ class Browser(object):
         exec_path = re.sub(r'\n', '', os.popen('which geckodriver').read())
         firefox = webdriver.Firefox(executable_path=exec_path,
                                     log_path='/dev/null')
-        firefox.implicitly_wait(30)
-        firefox.set_page_load_timeout(30)
+        firefox.implicitly_wait(60)
+        firefox.set_page_load_timeout(60)
         firefox.maximize_window()
         firefox.desired_capabilities.update({'user_agent':user_agent})
         return firefox
@@ -48,9 +49,22 @@ class Browser(object):
         options.add_argument('user-agent={}'.format(user_agent))
         exec_path = re.sub(r'\n', '', os.popen('which chromedriver').read())
         chrome=webdriver.Chrome(executable_path=exec_path, chrome_options=options)
-        chrome.implicitly_wait(30)
-        chrome.set_page_load_timeout(30)
+        chrome.implicitly_wait(60)
+        chrome.set_page_load_timeout(60)
         return chrome
+
+    @staticmethod
+    def save_cookies(cookies, filename):
+        fw = open(filename, 'w')
+        fw.write(json.dumps(cookies))
+        fw.close()
+
+    @staticmethod
+    def read_cookies(filename):
+        fr = open(filename, 'r')
+        cookies = json.loads(fr.read())
+        fr.close()
+        return cookies
 
 
 if __name__ == '__main__':
