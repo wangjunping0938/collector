@@ -54,3 +54,10 @@ apt-get install -f
 dpkg -i google-chrome-stable_current_amd64.deb
 unzip chromedriver_linux64.zip -d /usr/bin/
 ```
+
+
+### BUG问题
+Ubuntu18.04 firefox截图乱码
+```Bash
+apt-get install fonts-arphic-uming -y
+```
