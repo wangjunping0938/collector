@@ -9,7 +9,7 @@ import logging
 import traceback
 import scrapy
 import requests
-from urllib.request import urlretrieve 
+from urllib.request import urlretrieve
 from PIL import Image
 from pyvirtualdisplay import Display
 from scrapy.utils.project import get_project_settings
@@ -35,7 +35,12 @@ class TianyanchaSpider(scrapy.Spider):
     name = 'tianyancha'
     allowed_domains = ['tianyancha.com']
 
-    def __init__(self, company_name, id, number, *args, **kwargs):
+    # 设置爬取数据处理程序
+    #custom_settings = {'ITEM_PIPELINES':{'collector.pipelines.tianyancha.TianyanchaPipline':100}}
+    custom_settings ={
+        'ITEM_PIPELINES':{'collector.pipelines.tianyancha.TianyanchaPipline': 100}}
+
+    def __init__(self, company_name, id, number, mode=None, *args, **kwargs):
         settings = get_project_settings()
         super(TianyanchaSpider, self).__init__(*args, **kwargs)
         self.headers = Headers().headers
@@ -45,6 +50,7 @@ class TianyanchaSpider(scrapy.Spider):
         self.company_name = company_name
         self.id = id
         self.number = number
+        self.mode = mode
         try:
             os.makedirs(self.temp)
         except OSError: pass
