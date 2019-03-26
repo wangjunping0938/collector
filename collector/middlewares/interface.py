@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 # Data query submission interface function
+import requests
+import logging
 from collector.middlewares.parsefile import ParseFile as PF
 from scrapy.utils.project import get_project_settings
 
@@ -21,3 +23,72 @@ class Interface(object):
         data = [d for d in data if d['status'] == 1]
         data = [{k:v for k, v in d.items() if k in field} for d in data]
         return data
+
+    def company_queue_list(self, status=(1, 5)):
+        # 获取待更新队列中的公司列表
+        url = self.webinterface['company_queue_list']
+        parameters = {'in_grap':5}
+        parameters['per_page'] = requests.get(url).json()['data']['total_count']
+        data = requests.get(url, parameters).json()['data']['rows']
+        # 过滤不符合条件的公司
+        data = [d for d in data if d['status'] == 1]
+        tyc = [d for d in data if d['tyc_status'] not in status]
+        bd = [d for d in data if d['bd_status'] not in status]
+        return tyc, bd
+
+    def update_status(self, id, company_name, status_name, status_value):
+        # 更新公司信息爬取状态
+        url = self.webinterface['company_queue_submit']
+        parameters = {'id':id, status_name:status_value}
+        try:
+            response = requests.post(url, parameters).json()
+            if response['message'] == 'success!':
+                message = '{}:爬取状态更新完成!'.format(company_name)
+            else:
+                message = response['message']
+            logging.info(message)
+        except Exception as e:
+            logging.error(e)
+
+    def updata_out_grap(self, id, number, company_name,
+                        status=['tyc_status', 'bd_status']):
+        # 根据其他爬取状态变化更新站外爬取状态值
+        url = self.webinterface['company_queue_list']
+        parameters = {'in_grap':5, 'number':number}
+        response = requests.get(url, parameters).json()['data']['rows'][0]
+        status = (response[status[0]], response[status[1]])
+
+        parameters = {'id':id}
+        if 1 in status:
+            parameters['out_grap'] = 1  # 进行中
+        elif sum(status) == 10:
+            parameters['out_grap'] = 5  # 已完成
+        elif sum(status) in (4, 7):
+            parameters['out_grap'] = 2  # 失败
+        elif sum(status) in (0, 2, 5):
+            parameters['out_grap'] = 0  #未抓取
+
+        # 更新站外爬取状态
+        url = self.webinterface['company_queue_submit']
+        try:
+            response = requests.post(url, parameters).json()
+            if response['message'] == 'success!':
+                message = '{}: 站外爬取状态更新完成'.format(company_name)
+            else:
+                message = response['message']
+            logging.info(message)
+        except Exception as e:
+            logging.error(e)
+
+    def update_data(self, data):
+        # 上传爬取的公司信息数据
+        url = self.webinterface['company_update']
+        try:
+            response = requests.post(url, data).json()
+            if response['message'] == 'success!':
+                message = '{}: 信息上传完成'.format(data['name'])
+            else:
+                message = response['message']
+            logging.info(message)
+        except Exception as e:
+            logging.error(e)
