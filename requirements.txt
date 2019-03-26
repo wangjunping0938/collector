@@ -7,3 +7,5 @@ PyVirtualDisplay == 0.2.1
 Pillow == 5.4.1
 
 requests == 2.21.0
+
+fonttools == 3.39.0
