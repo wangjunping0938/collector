@@ -11,7 +11,6 @@
 
 
 #### 环境配置
-___
 
 **Python虚拟环境配置**
 ```Bash
@@ -20,7 +19,7 @@ source venv/bin/activate
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-###### CentOS7+系统浏览器配置
+**CentOS7+系统浏览器配置**
 - Firefox
 ```Bash
 yum install xorg-x11-server-Xvfb bzip gtk3 -y
