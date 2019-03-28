@@ -78,7 +78,7 @@ class TianyanchaSpider(scrapy.Spider):
                 if retry >= 5: break
 
         login_url = 'https://www.tianyancha.com/login'
-        for c in companys[:5]:
+        for c in companys:
             # 验证URL是否被爬取
             RH = RedisHandle(self.host, self.port)
             search_url = 'https://www.tianyancha.com/search?key={}'.format(c['name'])
