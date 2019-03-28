@@ -13,3 +13,5 @@ fonttools == 3.39.0
 scrapyd == 1.2.0
 
 scrapyd-client == 1.1.0
+
+redis == 3.2.1
