@@ -108,13 +108,14 @@ class Interface(object):
 
 
 if __name__ == '__main__':
-    opalus_company_list = 'http://opalus-dev.taihuoniao.com/api/design_company/list'
-    opalus_queue_list = 'http://opalus-dev.taihuoniao.com/api/company_queue/list'
-    opalus_queue_submit = 'http://opalus-dev.taihuoniao.com/api/company_queue/submit'
-    opalus_company_view = 'http://opalus-dev.taihuoniao.com/api/design_company/view'
-    opalus_company_update = 'http://opalus-dev.taihuoniao.com/api/design_company/update'
-    opalus_image_submit = 'http://opalus-dev.taihuoniao.com/api/image/submit'
+    opalus_cpy_list = 'http://example.com/interface/design_cpy/list'
+    opalus_queue_list = 'http://example.com/interface/cpy_queue/list'
+    opalus_queue_submit = 'http://example.com/interface/cpy_queue/submit'
+    opalus_cpy_view = 'http://example.com/interface/design_cpy/view'
+    opalus_cpy_update = 'http://example.com/interface/design_cpy/update'
+    opalus_image_submit = 'http://example.com/interface/image/submit'
 
+    """
     cpys = Interface.company_list(opalus_company_list)
 
     company = {'_id': '5a951f5db24b006f0fe723f2', 'name': '北京上品极致产品设计有限公司', 'number': 180227170533300348}
@@ -133,3 +134,4 @@ if __name__ == '__main__':
     cqlc = Interface.query_status(opalus_queue_list, company)
     print(cqlc)
     Interface.updata_out_grap(opalus_queue_submit, company, cqlc)
+    """
