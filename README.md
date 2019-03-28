@@ -63,12 +63,12 @@ service redis-server start
 
 ### 爬虫项目部署及爬虫管理
 ---
-**启动爬虫项目管理后台**
+**启动爬虫项目部署**
+- 启动管理服务
 ```Bash
 sh deployment/scrapyd-service.sh start
 ```
-
-**爬虫项目部署至管理后台**
+- 部署爬虫项目至管理工具
 ```Bash
 sh deployment/deploy.sh
 ```
