@@ -4,14 +4,14 @@
 
 ### 环境配置
 
-Python虚拟环境配置
+- Python虚拟环境配置
 ```Bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-CentOS7+系统浏览器配置
+- CentOS7+系统浏览器配置
 ```Bash
 # Firefox
 yum install xorg-x11-server-Xvfb bzip gtk3 -y
@@ -31,7 +31,7 @@ echo "#!/bin/bash" > /etc/profile.d/phantomjs.sh
 echo "export PATH=\$PATH:/opt/software/phantomjs-2.1.1-linux-x86_64/bin" >> /etc/profile.d/phantomjs.sh
 ```
 
-Ubuntu18.04+系统浏览器配置
+- Ubuntu18.04+系统浏览器配置
 ```Bash
 # Firefox
 apt-get install libgtk-3-dev -y
@@ -55,27 +55,28 @@ dpkg -i google-chrome-stable_current_amd64.deb
 unzip chromedriver_linux64.zip -d /usr/bin/
 ```
 
-Ubuntu18.04+Redis数据库配置
+- Ubuntu18.04+Redis数据库配置
 ```Bash
 apt-get install tcl tcl-dev -y
 apt-get install redis-server -y
 service redis-server start
 ```
+---
 
 
 ### 爬虫项目部署及爬虫管理
 
-启动爬虫项目管理后台
+- 启动爬虫项目管理后台
 ```Bash
 sh deployment/scrapyd-service.sh start
 ```
 
-爬虫项目部署至管理后台
+- 爬虫项目部署至管理后台
 ```Bash
 sh deployment/deploy.sh
 ```
 
-爬虫管理相关指令
+- 爬虫管理相关指令
 ```Bash
 # 检查爬虫负载信息
 curl http://localhost:6800/daemonstatus.json
@@ -103,14 +104,15 @@ curl http://localhost:6800/delversion.json -d project=collector -d version=15395
 curl http://localhost:6800/delversion.json -d project=collector
 ```
 
-Linux系统定时任务(编辑`/etc/crontab`)
+- Linux系统定时任务(编辑`/etc/crontab`)
 ```Bash
 0 11 * * * root curl http://127.0.0.1:6800/schedule.json -d project=collector -d spider=tianyancha -d mode=update
 ```
+---
 
 
 ### BUG问题
-Ubuntu18.04 firefox截图乱码
+- Ubuntu18.04 firefox截图乱码
 ```Bash
 apt-get install fonts-arphic-uming -y
 ```
