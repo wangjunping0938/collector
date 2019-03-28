@@ -12,14 +12,14 @@
 
 #### 环境配置
 
-**Python虚拟环境配置**
+Python虚拟环境配置
 ```Bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-**CentOS7+系统浏览器配置**
+CentOS7+系统浏览器配置
 - Firefox
 ```Bash
 yum install xorg-x11-server-Xvfb bzip gtk3 -y
@@ -114,14 +114,14 @@ curl http://localhost:6800/delversion.json -d project=collector
 
 #### Linux系统定时任务
 
-**编辑`/etc/crontab`**
+编辑`/etc/crontab`
 ```Bash
 0 11 * * * root curl http://127.0.0.1:6800/schedule.json -d project=collector -d spider=tianyancha -d mode=update
 ```
 
 
 #### BUG问题
-**Ubuntu18.04 firefox截图乱码**
+Ubuntu18.04 firefox截图乱码
 ```Bash
 apt-get install fonts-arphic-uming -y
 ```
