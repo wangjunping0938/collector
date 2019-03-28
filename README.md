@@ -3,6 +3,7 @@
 
 
 ### 环境配置
+---
 **Python虚拟环境配置**
 ```Bash
 python3 -m venv venv
@@ -58,11 +59,10 @@ apt-get install tcl tcl-dev -y
 apt-get install redis-server -y
 service redis-server start
 ```
----
 
 
 ### 爬虫项目部署及爬虫管理
-
+---
 **启动爬虫项目管理后台**
 ```Bash
 sh deployment/scrapyd-service.sh start
@@ -105,10 +105,10 @@ curl http://localhost:6800/delversion.json -d project=collector
 ```Bash
 0 11 * * * root curl http://127.0.0.1:6800/schedule.json -d project=collector -d spider=tianyancha -d mode=update
 ```
----
 
 
 ### BUG问题
+---
 **Ubuntu18.04 firefox截图乱码**
 ```Bash
 apt-get install fonts-arphic-uming -y
