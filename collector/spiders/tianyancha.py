@@ -21,6 +21,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains
 from collector.middlewares.browser import Browser
 from collector.middlewares.parsefile import ParseFile as PF
+from collector.middlewares.redishandle import RedisHandle
+from collector.middlewares.interface import Interface as I
 from collector.items.tianyancha import TianyanchaItem
 
 
@@ -36,52 +38,76 @@ class TianyanchaSpider(scrapy.Spider):
     allowed_domains = ['tianyancha.com']
 
     # 设置爬取数据处理程序
-    #custom_settings = {'ITEM_PIPELINES':{'collector.pipelines.tianyancha.TianyanchaPipline':100}}
     custom_settings ={
         'ITEM_PIPELINES':{'collector.pipelines.tianyancha.TianyanchaPipline': 100}}
 
-    def __init__(self, company_name, id, number, mode=None, *args, **kwargs):
+    def __init__(self, mode=None, *args, **kwargs):
         settings = get_project_settings()
         super(TianyanchaSpider, self).__init__(*args, **kwargs)
-        self.headers = Headers().headers
+        config = settings['CONFIG_FILE']
+        self.host = PF.parse2dict(config, 'redis')['host']
+        self.port = PF.parse2dict(config, 'redis')['port']
+        self.apis = PF.parse2dict(config, 'apis')
+        self.users = PF.parse2dict(config, self.name)
         self.user_agent = settings['USER_AGENT']
+        self.headers = Headers().headers
         self.temp = settings['TEMP_DIR']
-        self.users = PF.parse2dict(settings['CONFIG_FILE'], self.name)
-        self.company_name = company_name
-        self.id = id
-        self.number = number
         self.mode = mode
+
         try:
             os.makedirs(self.temp)
         except OSError: pass
 
     def start_requests(self):
-        S = SimulatedLogin()
+        # 根据模式选择全量更新,或只更新队列
+        if self.mode:
+            api = self.apis['opalus_queue_list']
+            companys = I.company_queue_list(api, 'tyc_status')
+        else:
+            api = self.apis['opalus_company_list']
+            companys = I.company_list(api)
+
+        # 登陆失败后尝试重新登陆
+        def retry_login(login, cookie_file):
+            retry = 0
+            while not os.path.exists(cookie_file):
+                try:
+                    login.login()
+                except Exception as e: pass
+                retry += 1
+                if retry >= 5: break
+
         login_url = 'https://www.tianyancha.com/login'
-        username = random.choice(list(self.users.keys()))
-        password = self.users[username]
+        for c in companys[:5]:
+            # 验证URL是否被爬取
+            RH = RedisHandle(self.host, self.port)
+            search_url = 'https://www.tianyancha.com/search?key={}'.format(c['name'])
+            c['link'] = search_url
+            if RH.verify(self.name, search_url):
+                continue
 
-        # 登陆获取cookie
-        cookie_file = '{}/{}@{}.cookie'.format(self.temp, username, self.name)
-        retry = 0
-        while not os.path.exists(cookie_file):
-            try:
-                S.login(self.user_agent, self.name, login_url, username,
-                        password, self.temp)
-            except Exception as e:
-                pass
-            retry += 1
-            if retry >=5: break
+            # 登陆获取cookie
+            username = random.choice(list(self.users.keys()))
+            password = self.users[username]
+            cookie_file = '{}/{}@{}.cookie'.format(self.temp, username, self.name)
+            kwargs = {'username':username}
+            kwargs['password'] = password
+            kwargs['temp'] = self.temp
+            kwargs['user_agent'] = self.user_agent
+            kwargs['cookie_file'] = cookie_file
+            kwargs['url'] = login_url
+            SL = SimulatedLogin(**kwargs)
+            retry_login(SL, cookie_file)
 
-        # 构造URL爬取
-        search_url = 'https://www.tianyancha.com/search?key={}'.format(self.company_name)
-        if os.path.exists(cookie_file):
-            cookies = Browser.read_cookies(cookie_file)[1:]
-            self.headers['User-Agent'] = Browser.read_cookies(cookie_file)[0]
-            meta = {'cookiejar':True, 'dont_filter':True,
-                    'handle_httpstatus_list':[301, 302]}
-            yield Request(search_url, cookies=cookies, headers=self.headers,
-                          callback=self.parse_search, meta=meta)
+            if os.path.exists(cookie_file):
+                cookies = Browser.read_cookies(cookie_file)
+                self.headers['User-Agent'] = cookies[0]
+                meta = {'cookiejar':True}
+                meta['dont_filter'] = True
+                meta['handle_httpstatus_list'] = [301, 302]
+                meta['company'] = c
+                yield Request(search_url, cookies=cookies[1:], headers=self.headers, meta=meta,
+                              callback=self.parse_search)
 
     def parse_search(self, response):
         # 解析搜索页
@@ -93,11 +119,11 @@ class TianyanchaSpider(scrapy.Spider):
             keys = list(rules['rules'].keys())
             values = [''.join(ext(d, rules['rules'][k])) for k in keys]
             rst = dict(zip(keys, values))
-            if rst['name'] == self.company_name:
+            if rst['name'] == response.meta['company']['name']:
                 response.meta.update({'data':rst})
-                yield Request(rst['url'], meta=response.meta,
-                              headers=self.headers, callback=self.parse_details)
-            break
+                yield Request(rst['url'], meta=response.meta, headers=self.headers,
+                              callback=self.parse_details)
+                break
 
     def parse_details(self, response):
         # 解析详情页
@@ -112,8 +138,8 @@ class TianyanchaSpider(scrapy.Spider):
 
         # 爬取结果中的默认字段
         item['craw_user_id'] = 5
-        item['number'] = self.number
-        item['_id'] = self.id
+        item['number'] = response.meta['company']['number']
+        item['company'] = response.meta['company']
 
         # 详情页数据提取
         for pk in rules.keys():
@@ -138,21 +164,33 @@ class TianyanchaSpider(scrapy.Spider):
 
 
 class SimulatedLogin(object):
+
+    def __init__(self, **kwargs):
+        self.temp = kwargs['temp']
+        self.username = kwargs['username']
+        self.password = kwargs['password']
+        self.url = kwargs['url']
+        self.user_agent = kwargs['user_agent']
+        self.cookie_file = kwargs['cookie_file']
+
     # 模拟登陆
-    def capture_screenshots(self, browser, dirname):
+    def capture_screenshots(self, browser):
         # Intercept verification code picture
-        filename1 = '{}/fullpage1.png'.format(dirname)
+        filename1 = '{}/fullpage1.png'.format(self.temp)
         browser.get_screenshot_as_file(filename1)
         area = browser.find_element_by_css_selector('.gt_bg.gt_show')
+
         left = area.location['x']
         top = area.location['y']
         right = left + area.size['width']
         bottom = top + area.size['height']
-        picture1 = Image.open(filename1).crop((left, top, right, bottom))
+
         browser.find_element_by_css_selector('.gt_slider_knob.gt_show').click()
         time.sleep(3)
-        filename2 = '{}/fullpage2.png'.format(dirname)
+        filename2 = '{}/fullpage2.png'.format(self.temp)
         browser.get_screenshot_as_file(filename2)
+
+        picture1 = Image.open(filename1).crop((left, top, right, bottom))
         picture2 = Image.open(filename2).crop((left, top, right, bottom))
         return picture1, picture2
 
@@ -201,15 +239,15 @@ class SimulatedLogin(object):
             back_tracks.append(-diff_value)
         return forward_tracks, sorted(back_tracks)
 
-    def input_account_password(self, browser, username, password):
+    def input_account_password(self, browser):
         # Waiting for loading done. click password login
         browser.find_element_by_xpath('//div[@active-tab="1"]').click()
         time.sleep(8)
         act = '/html/body/div[2]/div/div[2]/div/div[2]/div/div[3]/div[2]/div[2]/input'
         pwd = '/html/body/div[2]/div/div[2]/div/div[2]/div/div[3]/div[2]/div[3]/input'
         btn = '/html/body/div[2]/div/div[2]/div/div[2]/div/div[3]/div[2]/div[5]'
-        browser.find_element_by_xpath(act).send_keys(username)
-        browser.find_element_by_xpath(pwd).send_keys(password)
+        browser.find_element_by_xpath(act).send_keys(self.username)
+        browser.find_element_by_xpath(pwd).send_keys(self.password)
         browser.find_element_by_xpath(btn).click()
         time.sleep(3)
         # Waiting for loading and enter account&password
@@ -237,41 +275,38 @@ class SimulatedLogin(object):
         ActionChains(browser).release(button).perform()
         time.sleep(1)
 
-    def login(self, user_agent, spider_name, login_url, username, password,
-              temp):
+    def login(self):
         # Use browser to simulate login 'www.tianyancha.com'
         logging.getLogger('easyprocess').setLevel(logging.INFO)
         display = Display(visible=0,size=(1920,1080))
         display.start()
-        firefox = Browser.firefox(user_agent)
+        firefox = Browser.firefox(self.user_agent)
 
         # Start simulate loging
         try:
-            firefox.get(login_url)
+            firefox.get(self.url)
             time.sleep(5)
 
             # Enter account passord and click login
-            self.input_account_password(firefox, username, password)
+            self.input_account_password(firefox)
 
             # Get the verification code picture and calculate the gap offset
-            picture1, picture2 = self.capture_screenshots(firefox, temp)
+            picture1, picture2 = self.capture_screenshots(firefox)
             offset = self.gap_offset(picture1, picture2)
 
             # Calculating the sliding trajectory and move slider
             forward_tracks, back_tracks = self.slide_tracks(offset)
             self.drag_slider(firefox, forward_tracks, back_tracks)
-            firefox.get_screenshot_as_file('{}/login_after.png'.format(temp))
+            firefox.get_screenshot_as_file('{}/login_after.png'.format(self.temp))
             time.sleep(12)
 
             # Store cookies after successful login
             try:
                 firefox.find_element_by_css_selector('.input-group-btn.btn.-hg')
                 logging.info('Simulated login success')
-                cookie_file = '{}/{}@{}.cookie'.format(temp, username,
-                                                       spider_name)
                 cookies = firefox.get_cookies()
-                cookies[0] = user_agent
-                Browser.save_cookies(cookies, cookie_file)
+                cookies[0] = self.user_agent
+                Browser.save_cookies(cookies, self.cookie_file)
                 firefox.quit()
                 display.stop()
             except Exception as e:

@@ -6,34 +6,38 @@ import re
 import string
 import logging
 from fontTools.ttLib import TTFont
-from scrapy.utils.project import get_project_settings
-from collector.middlewares.interface import Interface
+from collector.middlewares.interface import Interface as I
+from collector.middlewares.redishandle import RedisHandle
 
 
 class TianyanchaPipline(object):
 
-    def __init__(self):
-        settings = get_project_settings()
-        self.temp = settings['TEMP_DIR']
-
     def process_item(self, item, spider):
-        company = {'id':item['_id'], 'name':item['name'], 'number':item['number']}
+        RH = RedisHandle(spider.host, spider.port)
+        company = item['company']
+        item.pop('company')
         item = self.collation_data(item)
-        I = Interface()
-
-        # 上传公司信息(更新爬取状态)
-        if I.update_data(item):
+        # 上传公司信息
+        api = spider.apis['opalus_company_update']
+        if I.update_data(api, item):
             if spider.mode:
-                I.update_status(company, 'tyc_status', 5)
+                # 更新天眼查爬虫状态
+                api = spider.apis['opalus_queue_submit']
+                I.update_status(api, company, 'tyc_status', 5)
+
+                # 更新站外爬取状态
+                api = spider.apis['opalus_queue_list']
+                status = I.query_status(api, company)
+                api = spider.apis['opalus_queue_submit']
+                I.updata_out_grap(api, company, start)
+            # Redis数据库记录d当前URL爬取状态
+            RH.insert(spider.name, company['link'])
         else:
-            message = '{}: 信息上传失败!'.format(company['name'])
-            if spider.mode:
-                I.update_status(company, 'tyc_status', 2)
-
+            logging.error('{}: Data upload failed'.format(company['name']))
         return item
 
+    # 数据整理
     def collation_data(self, item):
-        # 数据整理
         # 清理空数据
         clean_data = {k:v for k, v in item.items() if v}
         item.clear()
@@ -122,7 +126,6 @@ class TianyanchaPipline(object):
         clean_data = {key:value for key, value in item.items() if value}
         item.clear()
         item.update(clean_data)
-        item.pop('_id')
         return item
 
     def parse_font(self, value):

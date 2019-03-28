@@ -5,7 +5,7 @@ import scrapy
 class TianyanchaItem(scrapy.Item):
 
     # 基本信息
-    _id = scrapy.Field()  # 企业数据库ID
+    company = scrapy.Field()  # 企业基础信息
     number = scrapy.Field()  # 编号
     name = scrapy.Field()  # 企业全称
     short_name = scrapy.Field()  # 企业简称
