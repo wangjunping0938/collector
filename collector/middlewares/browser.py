@@ -22,8 +22,8 @@ class Browser(object):
         phantomjs = webdriver.PhantomJS(executable_path=exec_path,
                                         service_log_path='/dev/null',
                                         desired_capabilities=dcap)
-        phantomjs.set_page_load_timeout(60)
         phantomjs.implicitly_wait(60)
+        phantomjs.set_page_load_timeout(60)
         phantomjs.maximize_window()
         return phantomjs
 
