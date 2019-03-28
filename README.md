@@ -1,6 +1,7 @@
 基于[Scrapy](https://scrapy.org/ "scrapy官网")框架的网络爬虫系统
 ===
 
+
 ### 项目部署说明
 
 - [环境配置](#环境配置)
@@ -68,8 +69,10 @@ service redis-server start
 ```
 
 
-项目部署
+#### 项目部署
+
 **启动爬虫项目部署**
+
 - 启动管理服务
 ```Bash
 sh deployment/scrapyd-service.sh start
@@ -79,7 +82,8 @@ sh deployment/scrapyd-service.sh start
 sh deployment/deploy.sh
 ```
 
-项目管理
+#### 项目管理
+
 **爬虫管理相关指令**
 ```Bash
 # 检查爬虫负载信息
@@ -108,14 +112,15 @@ curl http://localhost:6800/delversion.json -d project=collector -d version=15395
 curl http://localhost:6800/delversion.json -d project=collector
 ```
 
-Linux系统定时任务
+#### Linux系统定时任务
+
 **编辑`/etc/crontab`**
 ```Bash
 0 11 * * * root curl http://127.0.0.1:6800/schedule.json -d project=collector -d spider=tianyancha -d mode=update
 ```
 
 
-BUG问题
+#### BUG问题
 **Ubuntu18.04 firefox截图乱码**
 ```Bash
 apt-get install fonts-arphic-uming -y
