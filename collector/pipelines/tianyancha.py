@@ -29,7 +29,7 @@ class TianyanchaPipline(object):
                 api = spider.apis['opalus_queue_list']
                 status = I.query_status(api, company)
                 api = spider.apis['opalus_queue_submit']
-                I.updata_out_grap(api, company, start)
+                I.updata_out_grap(api, company, status)
             # Redis数据库记录d当前URL爬取状态
             RH.insert(spider.name, company['link'])
         else:
@@ -42,6 +42,11 @@ class TianyanchaPipline(object):
         clean_data = {k:v for k, v in item.items() if v}
         item.clear()
         item.update(clean_data)
+
+        # 专利数量
+        handle = lambda d: ''.join(re.findall('\d+', ''.join(d)))
+        keys = ('patent_count')
+        item.update({k:handle(v) for k, v in item.items() if k in keys})
 
         # 微信相关数据整理
         handle = lambda d: ','.join(d)
