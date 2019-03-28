@@ -2,8 +2,7 @@
 ===
 
 
-### 项目部署说明
----
+## 项目部署说明
 - [环境配置](#环境配置)
     - [Python虚拟环境配置](#Python虚拟环境配置)
     - [CentOS7+系统浏览器配置](#CentOS7+系统浏览器配置)
@@ -18,14 +17,14 @@
 
 环境配置
 ------
-**Python虚拟环境配置**
+###### Python虚拟环境配置
 ```Bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-**CentOS7+系统浏览器配置**
+###### CentOS7+系统浏览器配置
 - Firefox
 ```Bash
 yum install xorg-x11-server-Xvfb bzip gtk3 -y
