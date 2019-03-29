@@ -6,6 +6,7 @@
 - [环境配置](#环境配置)
 - [项目部署](#项目部署)
 - [项目管理](#项目管理)
+- [爬虫启动指令](#爬虫启动指令)
 - [Linux系统定时任务](#Linux系统定时任务)
 - [其他问题](#其他问题)
 
@@ -18,9 +19,9 @@ source venv/bin/activate
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-CentOS7+系统浏览器配置
-- Firefox
+CentOS7.5 浏览器安装配置(7系列系统安装方式一致)
 ```Bash
+# Firefox
 yum install xorg-x11-server-Xvfb bzip gtk3 -y
 wget https://download-ssl.firefox.com.cn/releases/firefox/66.0/en-US/Firefox-latest-x86_64.tar.bz2
 wget https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz
@@ -28,18 +29,16 @@ tar -jxvf Firefox-latest-x86_64.tar.bz2 -C /opt/software/
 tar -zxvf geckodriver-v0.24.0-linux64.tar.gz -C /opt/software/
 echo "#!/bin/bash" > /etc/profile.d/firefox.sh
 echo "export PATH=\$PATH:/opt/software/firefox" >> /etc/profile.d/firefox.sh
-```
-- PhantomJS
-```Bash
+
+# PhantomJS
 wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2
 tar -jxvf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /opt/software/
 echo "#!/bin/bash" > /etc/profile.d/phantomjs.sh
 echo "export PATH=\$PATH:/opt/software/phantomjs-2.1.1-linux-x86_64/bin" >> /etc/profile.d/phantomjs.sh
 ```
-
-Ubuntu18.04+系统浏览器配置
-- Firefox
+Ubuntu18.04 浏览器安装配置
 ```Bash
+# Firefox
 apt-get install libgtk-3-dev -y
 apt-get install xvfb -y
 apt-get install libdbus-glib-1-2 -y
@@ -49,9 +48,8 @@ tar -jxvf Firefox-latest-x86_64.tar.bz2 -C /opt/software/
 tar -zxvf geckodriver-v0.24.0-linux64.tar.gz -C /opt/software/
 echo "#!/bin/bash" > /etc/profile.d/firefox.sh
 echo "export PATH=\$PATH:/opt/software/firefox" >> /etc/profile.d/firefox.sh
-```
-- Chrome
-```Bash
+
+# Chrome
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 wget http://chromedriver.storage.googleapis.com/2.46/chromedriver_linux64.zip
 apt-get install xvfb libxi6 libgconf-2-4 -y
@@ -60,7 +58,7 @@ dpkg -i google-chrome-stable_current_amd64.deb
 unzip chromedriver_linux64.zip -d /usr/bin/
 ```
 
-Ubuntu18.04+Redis数据库配置
+Ubuntu18.04 Redis数据库配置
 ```Bash
 apt-get install tcl tcl-dev -y
 apt-get install redis-server -y
@@ -69,9 +67,9 @@ service redis-server start
 
 
 ### 项目部署
-修改`collector/settings/settings.py`文件中的一些路径
+修改 `collector/settings/settings.py` 文件中的一些路径
 
-重命名`collector/settings/config_example.cfg` 为`.config.cfg`并修改配置
+修改 `collector/settings/config_example.cfg` 为 `.config.cfg` 并修改配置
 
 启动管理服务
 ```Bash
@@ -113,10 +111,30 @@ curl http://localhost:6800/delversion.json -d project=collector -d version=15395
 curl http://localhost:6800/delversion.json -d project=collector
 ```
 
+
 ### Linux系统定时任务
 编辑`/etc/crontab`
 ```Bash
 0 11 * * * root curl http://127.0.0.1:6800/schedule.json -d project=collector -d spider=tianyancha -d mode=update
+```
+
+
+### 爬虫启动指令
+```Bash
+# https://www.tianyancha.com/ 爬虫启动命令
+# 更新队列
+curl http://localhost:6800/schedule.json -d project=collector -d spider=tianyancha -d mode=update
+# 全量更新
+curl http://localhost:6800/schedule.json -d project=collector -d spider=tianyancha
+
+# 百度搜素热度爬虫
+# 更新队列
+curl http://localhost:6800/schedule.json -d project=collector -d spider=baiduhot -d mode=update
+# 全量更新
+curl http://localhost:6800/schedule.json -d project=collector -d spider=baiduhot
+
+# https://www.xiaomiyoupin.com/ 启动
+curl http://localhost:6800/schedule.json -d project=collector -d spider=xiaomiyoupin
 ```
 
 
