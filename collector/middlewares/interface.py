@@ -106,6 +106,23 @@ class Interface(object):
             rst = False
         return rst
 
+    @staticmethod
+    def upload_image_info(url, data):
+        # 上传图片信息
+        try:
+            message = requests.post(url, data).json()['message']
+            if message == 'success!':
+                message = 'Picture info upload {}'.format(message)
+                rst = True
+            else:
+                message = 'Picture info upload {}'.format(message)
+                rst = False
+            logging.info(message)
+        except Exception as e:
+            logging.error(e)
+            rst = False
+        return rst
+
 
 if __name__ == '__main__':
     opalus_cpy_list = 'http://example.com/interface/design_cpy/list'
