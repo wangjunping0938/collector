@@ -9,6 +9,7 @@
 - [爬虫启动指令](#爬虫启动指令)
 - [Linux系统定时任务](#Linux系统定时任务)
 - [其他问题](#其他问题)
+- [爬虫创建](#爬虫创建)
 
 
 ### 环境配置
@@ -36,6 +37,7 @@ tar -jxvf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /opt/software/
 echo "#!/bin/bash" > /etc/profile.d/phantomjs.sh
 echo "export PATH=\$PATH:/opt/software/phantomjs-2.1.1-linux-x86_64/bin" >> /etc/profile.d/phantomjs.sh
 ```
+
 Ubuntu18.04 浏览器安装配置
 ```Bash
 # Firefox
@@ -142,4 +144,21 @@ curl http://localhost:6800/schedule.json -d project=collector -d spider=xiaomiyo
 Ubuntu18.04 firefox截图乱码
 ```Bash
 apt-get install fonts-arphic-uming -y
+```
+
+
+### 爬虫创建
+- 创建爬虫(一般使用网站域名进行命名)
+```Bash
+scrapy genspider -t basic example 'example.com'
+```
+
+- 爬取数据字段设置(collector/items/example.py)(创建一个与爬虫名称一致的文件,参考该目录下的其他文件)
+```Bash
+touch collector/items/example.py
+```
+
+- 爬取的数据处理程序(collector/piplines/example.py)(同样创建一个与爬虫名称一致的文件,同理参考该目录下的其他文件)
+```Bash
+touch collector/piplines/example.py
 ```
