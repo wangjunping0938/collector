@@ -14,6 +14,7 @@
 
 ### 环境配置
 Python虚拟环境配置
+Python3.6.5+
 ```Bash
 python3 -m venv venv
 source venv/bin/activate

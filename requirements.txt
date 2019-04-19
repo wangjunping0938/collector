@@ -15,3 +15,11 @@ scrapyd == 1.2.0
 scrapyd-client == 1.1.0
 
 redis == 3.2.1
+
+Twisted == 18.9.0
+
+hyperlink == 18.0.0
+
+lxml == 4.3.2
+
+urllib3 == 1.24.1
