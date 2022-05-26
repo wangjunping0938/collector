@@ -16,7 +16,7 @@ scrapyd-client == 1.1.0
 
 redis == 3.2.1
 
-Twisted == 18.9.0
+Twisted == 22.4.0
 
 hyperlink == 18.0.0
 
